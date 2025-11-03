@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Configure an OMV service to use the `core` endpoint
+        const service = platform.getOMVService({
+            path: "v2/vectortiles/core/mc",
+            // Request the transit vector layer
+            queryParams: {
+                content: "default,transit",
+            },
+        });
+        const baseUrl = `https://js.api.here.com/v3/3.2/styles/harp/oslo`;
+        // Set a Japan-specific map style using a Tokyo day-time theme (tko.normal.day).
+        const style = new H.map.render.harp.Style(`${baseUrl}/tko.normal.day.json`);
+        // Create a provider that manages vector tiles based on the configured service and the Japan-specific style.
+        const provider = new H.service.omv.Provider(service, style, {
+            // Set the map language to Japanese ("ja").
+            lg: "ja",
+        });
+        // Create a tile layer using the provider.
+        const layer = new H.map.layer.TileLayer(provider, { max: 22 });
+
+        // Set feature/mode to show PT in Japan
+        const onChangeHandler = (event) => {
+            if (event.target.getState() === H.map.render.Style.State.READY) {
+                style.removeEventListener('change', onChangeHandler);
+                const features = style.getEnabledFeatures();
+                // Enable 'all systems' mode of the 'public transit' style feature
+                // This is for displaying all the Japanese public transit systems.
+                features.find((f) => f.feature === "public transit").mode = "all systems";
+                style.setEnabledFeatures([...features]);
+            }
+        }
+        style.addEventListener('change', onChangeHandler);
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            layer, {
+            zoom: 16,
+            center: {
+                lat: 35.68026,
+                lng: 139.76744
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+
+        // Setup Map Settings and other UI controls
+        const ui = new H.ui.UI(map)
+        const mapSettingsControl = new H.ui.MapSettingsControl({
+            'baseLayers': [{
+                'label': 'Day Map',
+                'layer': layer
+            }],
+            'layers': [{
+                'label': 'Night Map',
+                'layer': [layer]
+            }],
+            'alignment': H.ui.LayoutAlignment.BOTTOM_RIGHT
+        });
+        const scalebarControl = new H.ui.ScaleBar({
+            'alignment': H.ui.LayoutAlignment.BOTTOM_RIGHT
+        });
+        const zoomControl = new H.ui.ZoomControl({
+            'alignment': H.ui.LayoutAlignment.RIGHT_BOTTOM
+        });
+        ui.addControl('mapsettings', mapSettingsControl);
+        ui.addControl('zoom', zoomControl);
+        ui.addControl('scalebar', scalebarControl);
+
+    </script>
+</body>
+
+</html>

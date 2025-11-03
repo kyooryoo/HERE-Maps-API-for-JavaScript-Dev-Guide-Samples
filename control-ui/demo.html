@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-data.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers, "zh-CN");
+
+        // The UI module comes with localizations for the following languages:
+        // en-US – English (United States)
+        // de-DE – German
+        // es-ES – Spanish
+        // fi-FI – Finnish
+        // fr-FR – French
+        // it-IT – Italian
+        // nl-NL – Dutch
+        // pl-PL – Polish
+        // pt-BR – Portuguese (Brazil)
+        // pt-PT – Portuguese (Portugal)
+        // ru-RU – Russian
+        // tr-TR – Turkish
+        // zh-CN – Chinese (China)
+
+        // Manage the position of UI controls
+        const mapSettingsControl = ui.getControl('mapsettings');
+        const zoomControl = ui.getControl('zoom');
+        const scalebarControl = ui.getControl('scalebar');
+
+        mapSettingsControl.setAlignment('bottom-left');
+        zoomControl.setAlignment('top-right');
+        scalebarControl.setAlignment('top-left');
+
+        // Hide an UI Control
+        scalebarControl.setVisibility(false);
+
+        // Disable an UI Control
+        zoomControl.setDisabled(true);
+
+
+        // Add an overview map control
+        // Create a map layer for the overview control
+        const overviewLayers = platform.createDefaultLayers();
+        // Instantiate the overview map by using the H.ui.Overview constructor
+        const overviewMap = new H.ui.Overview(overviewLayers.vector.normal.map, {
+            //Set the control position and the map size and zoom parameters with respect to the map's viewport
+            alignment: H.ui.LayoutAlignment.RIGHT_BOTTOM,
+            zoomDelta: 6,
+            scaleX: 5,
+            scaleY: 6
+        });
+        // Add the control to the map
+        ui.addControl('overview', overviewMap);
+
+
+        // Add an info bubble
+        // Create the variable with coordinates for the Tegel Airport
+        const airportCoordinates = {
+            lat: 52.554429,
+            lng: 13.290309
+        };
+        // Create the HTML content for the info bubble
+        const content = '<div>' +
+            '<h4>Tegel Airport</h4>' +
+            '<p><a href="http://en.wikipedia.org/wiki/Berlin-Tegel_International_Airport" target="_blank">Learn more</a>.</p>' +
+            '</div>';
+        // Create an info bubble at the Spire of Dublin location with the HTML content
+        const infoBubble = new H.ui.InfoBubble(airportCoordinates, {
+            content
+        });
+        // Add the info bubble to the UI
+        ui.addBubble(infoBubble);
+
+
+        // Addd zoom rectangle control
+        const zoomRectangle = new H.ui.ZoomRectangle({
+            // Position the control on the map's viewport
+            alignment: H.ui.LayoutAlignment.RIGHT_BOTTOM
+        });
+        ui.addControl('rectangle', zoomRectangle);
+
+
+        // Add the distance measurement control
+        // Create a template for marker icons by using custom SVG style
+        function createMarkerIcon(color) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32">
+            <path d="M12 0C6.48 0 2 4.48 2 10c0 5.057 3.333 14.5 10 22 6.667-7.5 10-16.943 10-22 0-5.52-4.48-10-10-10zm0 14c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z" 
+            fill="${color}" stroke="#FFFFFF"/>
+        </svg>`;
+        }
+
+        // Define the colors for the icons
+        const startColor = "#00008B";
+        const stopoverColor = "#8AC9C9";
+        const splitColor = "#A2EDE7";
+        const endColor = "#990000";
+
+        // Create the icons with respective colors
+        const startIcon = new H.map.Icon(createMarkerIcon(startColor));
+        const stopoverIcon = new H.map.Icon(createMarkerIcon(stopoverColor));
+        const endIcon = new H.map.Icon(createMarkerIcon(endColor));
+        const splitIcon = new H.map.Icon(createMarkerIcon(splitColor));
+
+        // Create the DistanceMeasurement control
+        const distanceMeasurementTool = new H.ui.DistanceMeasurement({
+        startIcon: startIcon,
+        stopoverIcon: stopoverIcon,
+        endIcon: endIcon,
+        splitIcon: splitIcon,
+        lineStyle: {
+            strokeColor: "rgba(95, 229, 218, 0.5)",
+            lineWidth: 6
+        },
+        alignment: H.ui.LayoutAlignment.RIGHT_BOTTOM
+        });
+
+        // Add the DistanceMeasurement control to the UI
+        ui.addControl("distancemeasurement", distanceMeasurementTool);
+
+        
+        // Change unit system
+        ui.setUnitSystem(H.ui.UnitSystem.METRIC); // or IMPERIAL
+
+
+        // Customize Map Settings Control
+
+        const berlinGeojson = "https://heremaps.github.io/maps-api-for-javascript-examples/display-geojson-on-map/data/berlin.json";
+        
+        function getGeoJSONLayer () {
+            // Create GeoJSON reader which will download the specified file.
+            // Shape of the file was obtained by using HERE Geocoding and Search API.
+            // It is possible to customize look and feel of the objects.
+            const reader = new H.data.geojson.Reader(berlinGeojson, {
+                // This function is called each time parser detects a new map object
+                style: function (mapObject) {
+                // Parsed geo objects could be styled using setStyle method
+                if (mapObject instanceof H.map.Polygon) {
+                    mapObject.setStyle({
+                    fillColor: 'rgba(255, 0, 0, 0.5)',
+                    strokeColor: 'rgba(0, 0, 255, 0.2)',
+                    lineWidth: 3
+                    });
+                }
+                }
+            });
+
+            // Start parsing the file
+            reader.parse();
+
+            // return layer which shows GeoJSON data on the map
+            return reader.getLayer();
+        };
+
+        const customMapSettingsControl = new H.ui.MapSettingsControl({
+            'baseLayers': [
+                {
+                    'label': 'Day',
+                    'layer': defaultLayers.vector.normal.map
+                },
+                {
+                    'label': 'Night',
+                    'layer': defaultLayers.vector.normal.mapnight
+                },
+                {
+                    'label': 'Traffic',
+                    'layer': [defaultLayers.hybrid.day.traffic, defaultLayers.hybrid.day.vector]
+                }
+            ],
+            'layers': [
+                {
+                    'label': 'Berlin GeoJson',
+                    'layer': getGeoJSONLayer()
+                },
+            ],
+            'alignment': H.ui.LayoutAlignment.TOP_LEFT
+        });
+
+        // Remove the default map settings control that was added previously
+        ui.removeControl('mapsettings');
+        ui.addControl('mapsettings', customMapSettingsControl);
+
+
+    </script>
+</body>
+
+</html>

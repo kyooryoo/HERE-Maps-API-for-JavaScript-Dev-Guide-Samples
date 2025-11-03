@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            },
+            padding: { top: 50, right: 50, bottom: 50, left: 50 },
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        // Get an instance of the search service:
+        const searchService = platform.getSearchService();
+
+        // Define the addresses for the routing request:
+        const originAddress = "Sv. Pētera baznīca, Riga";
+        const destinationAddress = "Doma Laukums";
+
+        // Geocode an address using the search service:
+        function geocodeAddress(address) {
+            return new Promise((resolve, reject) => {
+                searchService.geocode(
+                    {
+                        q: address,
+                    },
+                    (result) => {
+                        /*
+                            Access the geographic position information of
+                            the first (presumably most relevant) result
+                            obtained from the geocoding process:
+                            */
+                        const location = result.items[0].position;
+                        resolve(location);
+                    },
+                    (error) => {
+                        console.error(
+                            `Error fetching geocoding data for ${address}:`,
+                            error
+                        );
+                        reject(error);
+                    }
+                );
+            });
+        }
+
+        // Use Promise.all to geocode both origin and destination addresses
+        Promise.all([geocodeAddress(originAddress), geocodeAddress(destinationAddress)])
+            .then(([origin, destination]) => {
+                // Create routing parameters for calculating the route
+                const routingParameters = {
+                    routingMode: "fast",
+                    transportMode: "pedestrian",
+                    origin: `${origin.lat},${origin.lng}`,
+                    destination: `${destination.lat},${destination.lng}`,
+                    return: "polyline",
+                };
+
+                const onResult = function (result) {
+                    if (result.routes.length) {
+                        const lineStrings = [];
+                        result.routes[0].sections.forEach((section) => {
+                            lineStrings.push(
+                                H.geo.LineString.fromFlexiblePolyline(section.polyline)
+                            );
+                        });
+
+                        const multiLineString = new H.geo.MultiLineString(lineStrings);
+                        const routeLine = new H.map.Polyline(multiLineString, {
+                            style: {
+                                strokeColor: "blue",
+                                lineWidth: 4,
+                            },
+                        });
+
+                        const startMarker = new H.map.Marker(origin);
+                        const endMarker = new H.map.Marker(destination);
+
+                        const group = new H.map.Group();
+                        group.addObjects([routeLine, startMarker, endMarker]);
+                        map.addObject(group);
+
+                        map.getViewModel().setLookAtData({
+                            bounds: group.getBoundingBox(),
+                        });
+                    }
+                };
+
+                const router = platform.getRoutingService(null, 8);
+
+                router.calculateRoute(routingParameters, onResult, function (error) {
+                    alert(error.message);
+                });
+            })
+            .catch((error) => {
+                console.error("Error fetching coordinates:", error);
+            });
+
+
+    </script>
+</body>
+
+</html>

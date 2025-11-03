@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            },
+            padding: { top: 5, right: 5, bottom: 5, left: 5 },
+
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        // Define the parameters for the isoline request:
+        var routingParams = {
+            transportMode: "car",
+            origin: "56.9,24.1",
+            "range[values]": "900",
+            "range[type]": "time",
+            routingMode: "fast",
+            optimizeFor: "quality",
+        };
+
+        // Define a callback function to process the isoline response.
+        var onResult = function (result) {
+            var isolines = result.isolines[0],
+                objects = [new H.map.Marker(result.departure.place.location)];
+
+            isolines.polygons.forEach((section) => {
+                let lineString = H.geo.LineString.fromFlexiblePolyline(section.outer);
+
+                // Create a polygon to display the area
+                objects.push(new H.map.Polygon(new H.geo.Polygon(lineString)));
+            });
+
+            // Add the polygon and marker to the map:
+            map.addObjects(objects);
+
+            // Center and zoom the map so that the whole isoline polygon is
+            // in the viewport:
+            map.getViewModel().setLookAtData({ bounds: objects[1].getBoundingBox() });
+        };
+
+        // Get an instance of the routing service:
+        var router = platform.getRoutingService();
+
+        // Call the Routing API to calculate an isoline:
+        router.calculateIsoline(routingParams, onResult, function (error) {
+            alert(error.message);
+        });
+
+    </script>
+</body>
+
+</html>

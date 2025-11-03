@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-clustering.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            },
+            padding: {
+                top: 50,
+                left: 50,
+                bottom: 50,
+                right: 50
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        // Create a variable that stores data points to display as clusters on the map
+        const data = [
+            new H.clustering.DataPoint(51.4748, -0.368, 1),  // City Airport (LCY)
+            new H.clustering.DataPoint(51.8897, 0.2629, 2),  // Biggin Hill Airport (BQH)
+            new H.clustering.DataPoint(51.4508, -0.1546, 1), // Heathrow Airport (LHR)
+            new H.clustering.DataPoint(51.3483, -0.5037, 1), // Gatwick Airport (LGW)
+            new H.clustering.DataPoint(51.1537, -0.1821, 2), // Luton Airport (LTN)
+            new H.clustering.DataPoint(51.7588, -0.262, 1),  // Stansted Airport (STN)
+        ];
+
+        // SVG template to use for noise icons
+        const noiseSvg =
+            '<svg xmlns="http://www.w3.org/2000/svg" height="20px" width="20px"><circle cx="5px" cy="5px" r="5px" fill="green" /></svg>';
+
+        // Create an icon to represent the noise points
+        // Note that same icon will be used for all noise points
+        const noiseIcon = new H.map.Icon(noiseSvg, {
+            size: {
+                w: 20,
+                h: 20
+            },
+            anchor: {
+                x: 10,
+                y: 10
+            },
+        });
+
+        // SVG template to use for cluster icons
+        const clusterSvgTemplate =
+            '<svg xmlns="http://www.w3.org/2000/svg" height="{diameter}" width="{diameter}">' +
+            '<circle cx="{radius}px" cy="{radius}px" r="{radius}px" fill="red" />' +
+            "</svg>";
+
+        // Create a clustered data provider with custom presentation logic:
+        const clusteredDataProvider = new H.clustering.Provider(
+            data,
+            {
+                // Define the zoom level range in which clustering occurs
+                min: 4,
+                max: 10,
+                clusteringOptions: {
+                    // data points within the eps pixcels of each other are clustered
+                    eps: 32,
+                    // Define the minimum weight required to form a cluster
+                    minWeight: 3
+                },
+                theme: {
+                    getClusterPresentation: function (cluster) {
+                        const weight = cluster.getWeight();
+                        const radius = weight * 5;
+                        const diameter = radius * 2;
+
+                        const svgString = clusterSvgTemplate
+                            .replace(/\{radius\}/g, radius)
+                            .replace(/\{diameter\}/g, diameter);
+
+                        const clusterIcon = new H.map.Icon(svgString, {
+                            size: {
+                                w: diameter,
+                                h: diameter
+                            },
+                            anchor: {
+                                x: radius,
+                                y: radius
+                            }
+                        });
+
+                        const clusterMarker = new H.map.Marker(cluster.getPosition(), {
+                            icon: clusterIcon,
+                            min: cluster.getMinZoom(),
+                            max: cluster.getMaxZoom()
+                        });
+
+                        clusterMarker.setData(cluster);
+                        return clusterMarker;
+                    },
+
+                    getNoisePresentation: function (noisePoint) {
+                        const noiseMarker = new H.map.Marker(noisePoint.getPosition(), {
+                            icon: noiseIcon,
+                            min: noisePoint.getMinZoom()
+                        });
+
+                        noiseMarker.setData(noisePoint);
+                        return noiseMarker;
+                    }
+                }
+            }
+        );
+
+        // Add tap event listener to handle cluster and noise point interactions:
+        clusteredDataProvider.addEventListener("tap", function(event) {
+            const marker = event.target;
+            const point = marker.getData();
+
+            if (point.isCluster()) {
+                console.group("Cluster was tapped");
+                point.forEachDataPoint((dataPoint) => {
+                console.log(
+                    "Noise point at " +
+                    dataPoint.getPosition().lat +
+                    ", " +
+                    dataPoint.getPosition().lng
+                );
+                });
+                console.groupEnd();
+            } else {
+                console.log(
+                "Noise point at " +
+                point.getPosition().lat +
+                ", " +
+                point.getPosition().lng +
+                " was tapped."
+                );
+            }
+        }, false);
+
+        // Create a layer that includes the data provider and its data points:
+        const layer = new H.map.layer.ObjectLayer(clusteredDataProvider);
+
+        // Add the layer to the map:
+        map.addLayer(layer);
+
+        // Calculate the bounding box of the data points
+        const bounds = new H.geo.MultiPoint(data).getBoundingBox();
+        // Automatically center and zoom the map to fit all data points
+        map.getViewModel().setLookAtData({
+            bounds
+        });
+
+    </script>
+</body>
+
+</html>

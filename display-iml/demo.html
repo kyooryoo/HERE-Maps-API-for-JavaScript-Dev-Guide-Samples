@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers({ pois: false });
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 10.5,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        // Configure the addIml function to import and display the IML data on the map
+        function addIml(map) {
+            // Define Here Resource Name (HRN) of the catalog
+            const catalogHrn = "hrn:here:data::olp-here:lings-test-catalog";
+            // Define the layer that stores data
+            // https://heremaps.github.io/maps-api-for-javascript-examples/display-geojson-on-map/data/berlin.json
+            // https://maps.amsterdam.nl/open_geodata/geojson_latlng.php?KAARTLAAG=MARKTEN_AMBULANT&THEMA=markten
+            const layerId = "berlin-geojson";
+            // Instantiate the IML service
+            const service = platform.getIMLService();
+            // Create a provider for the IML data
+            const imlProvider = new H.service.iml.Provider(service, catalogHrn, layerId);
+
+            // Add the IML layer to the map
+            map.addLayer(new H.map.layer.TileLayer(imlProvider));
+
+        }
+        // Call the addIml(map) function to add the IML layer to the map:
+        addIml(map);
+
+    </script>
+</body>
+
+</html>

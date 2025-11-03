@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 13,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        // Get an instance of the search service:
+        const service = platform.getSearchService();
+
+        // Call the geocode method and mark the found location on map
+        service.geocode({
+            q: 'berlin'
+        }, (result) => {
+            result.items.forEach((item) => {
+                map.addObject(new H.map.Marker(item.position));
+            });
+        }, alert);
+
+        // Call the reverse geocode and add a bubble for the found
+        service.reverseGeocode({
+            at: '52.5,13.4'
+        }, (result) => {
+            result.items.forEach((item) => {
+                ui.addBubble(new H.ui.InfoBubble(item.position, {
+                    content: "Reverse Geocode: " + item.address.label
+                }));
+            });
+        }, alert);
+
+        // Call the "autosuggest" method 
+        service.autosuggest({
+            q: 'berlin',
+            at: '52.5,13.4',
+            limit: 5
+        }, (result) => {
+            result.items.forEach(item => {
+                let { position, title } = item;
+                ui.addBubble(new H.ui.InfoBubble(position, {
+                    content: "Autosuggest: " + title
+                }));
+            });
+        }, alert);
+    </script>
+</body>
+
+</html>

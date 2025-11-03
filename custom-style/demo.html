@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Import the custom style which could be exported from HERE Style Editor
+        const styleFile = 'https://heremaps.github.io/maps-api-for-javascript-examples/change-harp-style-at-load/data/night.json';
+        const style = new H.map.render.harp.Style(styleFile);
+        const vectorLayerDark = platform.getOMVService().createLayer(style);
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            vectorLayerDark, {
+            zoom: 10,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing cntainer
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Import the default layers to use for some of the UI map views:
+        const defaultLayers = platform.createDefaultLayers();
+
+        //Setup Map Settings and other UI controls
+        const mapSettingsControl = new H.ui.MapSettingsControl({
+            'baseLayers': [
+                {
+                    'label': 'Dark',
+                    'layer': vectorLayerDark
+                },
+                {
+                    'label': 'Light',
+                    'layer': defaultLayers.vector.normal.lite
+                },
+                {
+                    'label': 'Traffic - Day',
+                    'layer': [defaultLayers.hybrid.day.vector, defaultLayers.hybrid.day.traffic]
+                },
+                {
+                    'label': 'Traffic - Night',
+                    'layer': [defaultLayers.hybrid.night.vector, defaultLayers.hybrid.night.traffic]
+                }
+            ],
+            'alignment': H.ui.LayoutAlignment.BOTTOM_RIGHT
+        });
+        const scalebarControl = new H.ui.ScaleBar({
+            'alignment': H.ui.LayoutAlignment.BOTTOM_RIGHT
+        });
+        const zoomControl = new H.ui.ZoomControl({
+            'alignment': H.ui.LayoutAlignment.RIGHT_BOTTOM
+        });
+
+        // Create the custom UI and add the controls
+        const ui = new H.ui.UI(map);
+        ui.addControl('zoom', zoomControl);
+        ui.addControl('mapsettings', mapSettingsControl);
+        ui.addControl('scalebar', scalebarControl);
+    </script>
+</body>
+
+</html>

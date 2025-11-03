@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-data.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        // Define custom icon style for airport markers
+        const svgMarkup = '<svg width="24" height="24" ' +
+            'xmlns="http://www.w3.org/2000/svg">' +
+            '<rect stroke="white" fill="red" x="1" y="1" width="22" ' +
+            'height="22" /><text x="12" y="18" font-size="12pt" ' +
+            'font-family="Arial" font-weight="bold" text-anchor="middle" ' +
+            'fill="white">A</text></svg>';
+
+        // Import and parse the GeoJSON data:
+        const file = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/refs/heads/master/geojson/ne_10m_airports.geojson';
+        const reader = new H.data.geojson.Reader(file, {
+            // This optional function is called each time parser detects a new map object:
+            // Skip this code to obtain the default marker look and feel
+            style: function(mapObject) {
+                // Parsed marker objects are styled using the setIcon() method
+                if (mapObject instanceof H.map.Marker) {
+                    mapObject.setIcon(new H.map.Icon(svgMarkup))
+                }
+            }
+        });
+        reader.parse();
+
+        // Create a GeoJSON layer using the parsed data and add it to the map
+        const layer = reader.getLayer();
+        map.addLayer(layer);
+
+        // Optionally, adjust the map zoom:
+        map.setZoom(6)
+
+        // Add a `tap` event listener to displays basic airport data in the browser console
+        map.addEventListener('tap', function (evt) {
+            const target = evt.target;
+
+            if (target instanceof H.map.Feature) {
+                // Extract specific key values from the GeoJSON file
+                const props = target.getData() || {};
+                const name = props.name || props.name_en || 'Unknown Airport';
+                const iata = props.iata_code || 'N/A';
+                const icao = props.gps_code || 'N/A';
+                const wiki = props.wikipedia || '—';
+                // Display the data as a table in the browser console
+                console.table({
+                    Airport: name,
+                    IATA: iata,
+                    ICAO: icao,
+                    Wikipedia: wiki
+                });
+            }
+        });
+
+    </script>
+</body>
+
+</html>

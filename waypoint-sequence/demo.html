@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            },
+            padding: {top: 50, bottom: 50, left: 50, right: 50 }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        // Instantiate the WaypointSequence service
+        const waypointsSequenceService = platform.getWaypointsSequenceService();
+
+        // Define the starting point, multiple destinations, and ending point
+        const params = {
+            start: 'WiesbadenCentralStation;50.0715,8.2434',
+            destination1: 'FrankfurtCentralStation;50.1073,8.6647',
+            destination2: 'DarmstadtCentralStation;49.8728,8.6326',
+            destination3: 'FrankfurtAirport;50.0505,8.5698',
+            destination4: 'HanauCentralStation;50.1218,8.9298',
+            end: 'MainzCentralStation;50.0021,8.259',
+            // Departure time
+            departure: '2025-02-09T09:30:00+01:00',
+            // Mode of transportation: fastest route by car with traffic enabled
+            mode: 'fastest;car;traffic:enabled'
+        }
+
+        // Create an SVG circle with the specified ID and center coordinates (15, 15)
+        function getMarkerIcon(id) {
+            const svgCircle = `<svg width="30" height="30" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                <g id="marker">
+                    <circle cx="15" cy="15" r="10" fill="#d80065ff" stroke="#d8007eff" stroke-width="4" />
+                    <text x="50%" y="50%" text-anchor="middle"
+                    fill="#FFFFFF" font-family="Arial, sans-serif" font-size="12px" dy=".3em">${id}</text>
+                </g></svg>`;
+            // Return a new H.map.Icon object with the SVG string and center coordinates 
+            return new H.map.Icon(svgCircle, {
+                anchor: {
+                    x: 15,
+                    y: 15
+                }
+            });
+        }
+
+        // Create polylines between waypoints
+        function createPolylines(results, style) {
+            // Initialize an empty array to store line strings
+            const lineStrings = [];
+            // Extract the waypoints and interconnections from the results
+            const { waypoints, interconnections } = results;
+            // Create a new H.geo.LineString object with the coordinates of two consecutive waypoints
+            for (let i = 0; i < waypoints.length - 1; i++) {
+                const lineString = (new H.geo.LineString([
+                    waypoints[i].lat, waypoints[i].lng, 0,
+                    waypoints[i + 1].lat, waypoints[i + 1].lng, 0
+                ]));
+                // Add the line string to the array of line strings
+                lineStrings.push(new H.map.Polyline(lineString, { style, data: interconnections[i] }));
+            }
+            // Return the array of line strings
+            return lineStrings;
+        }
+
+        // Calculate the waypoint sequence
+        waypointsSequenceService.findSequence(params, (response) => {
+            // Create an object group and populate it with markers
+            const group = new H.map.Group();
+            response.results[0].waypoints.forEach((y, i) => {
+                const icon = getMarkerIcon(i + 1);
+                const marker = new H.map.Marker({ lat: y.lat, lng: y.lng }, { icon, data: y });
+                group.addObject(marker);
+            });
+
+            // Create polylines and add them to the object group
+            const routePolylines = createPolylines(response.results[0], {
+                lineWidth: 10,
+                strokeColor: 'rgba(100, 100, 250, 0.8)'
+            });
+            group.addObjects(routePolylines);
+            
+            // Add the group to the map and set the view to show the bounding box of the group
+            map.addObject(group);
+            map.getViewModel().setLookAtData({ bounds: group.getBoundingBox() });
+
+            // Display waypoint data in a table in the browser console
+            group.addEventListener('tap', ({ target }) => {
+                console.table(target.getData())
+            });
+        }, console.error);
+
+    </script>
+</body>
+
+</html>

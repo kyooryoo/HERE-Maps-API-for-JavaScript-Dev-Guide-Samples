@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" charset="utf-8" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 12,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        /*
+            Geoshape 1 - circle
+        */
+
+        // Instantiate a circle object (using the default style):
+        var circle = new H.map.Circle({ lat: 52.5, lng: 13.4 }, 1000);
+
+        // Add the circle to the map:
+        map.addObject(circle);
+
+        // Get the bounding box of the circle
+        const circleBounds = circle.getBoundingBox();
+
+        /*
+            Geoshape 2 - Rectangle with style
+        */
+
+        // Create a style object:
+        var customStyle = {
+            strokeColor: 'black',
+            fillColor: 'rgba(0, 255, 255, 0.5)',
+            lineWidth: 10,
+            lineDash: [2, 2]
+        };
+
+        // Create a rectangle and pass the custom style as an options parameter:
+        var rect = new H.map.Rect(new H.geo.Rect(52.51, 13.39, 52.49, 13.41),
+            { style: customStyle });
+
+        // Add the rectangle to the map:
+        map.addObject(rect);
+
+        // Get the bounding box of the rectanble
+        const rectBounds = rect.getBoundingBox();
+
+        // Zoom the map to fit the rectangle:
+        map.getViewModel().setLookAtData({ bounds: rectBounds });
+
+        /*
+            Geoshape 3 - Polyline
+        */
+        
+        // Define points to represent the vertices of a short route in Berlin, Germany:
+        var points = [
+            { lat: 52.5309825, lng: 13.3845921 },
+            { lat: 52.5311923, lng: 13.3853495 },
+            { lat: 52.5313532, lng: 13.3861756 },
+            { lat: 52.5315142, lng: 13.3872163 },
+            { lat: 52.5316215, lng: 13.3885574 },
+            { lat: 52.5320399, lng: 13.3925807 },
+            { lat: 52.5321472, lng: 13.3935785 },
+            { lat: 52.5323832, lng: 13.395499 },
+            { lat: 52.5324261, lng: 13.3959818 },
+            { lat: 52.5325012, lng: 13.397795 },
+            { lat: 52.5325656, lng: 13.3986318 },
+            { lat: 52.5326192, lng: 13.3989215 },
+            { lat: 52.5325119, lng: 13.3989751 },
+            { lat: 52.5323081, lng: 13.3991039 },
+            { lat: 52.5318789, lng: 13.3994472 },
+            { lat: 52.5301194, lng: 13.4009278 },
+            { lat: 52.5297546, lng: 13.4012604 },
+            { lat: 52.5296152, lng: 13.4014106 },
+            { lat: 52.5289822, lng: 13.4018934 },
+            { lat: 52.5276947, lng: 13.4029663 },
+            { lat: 52.5271797, lng: 13.4033203 },
+            { lat: 52.5269973, lng: 13.4033954 },
+            { lat: 52.5265145, lng: 13.4035349 },
+            { lat: 52.5260746, lng: 13.4036851 },
+            { lat: 52.5260103, lng: 13.4038353 },
+            { lat: 52.5256562, lng: 13.40464 },
+            { lat: 52.5253022, lng: 13.4053588 },
+            { lat: 52.5250447, lng: 13.4059381 },
+            { lat: 52.5249588, lng: 13.4062278 },
+            { lat: 52.5249267, lng: 13.4064317 },
+            { lat: 52.5249052, lng: 13.406775 },
+            { lat: 52.5248623, lng: 13.4069574 },
+            { lat: 52.5241864, lng: 13.4089208 },
+            { lat: 52.5241327, lng: 13.4091246 },
+            { lat: 52.5240898, lng: 13.409307 },
+            { lat: 52.5240040, lng: 13.4096611 },
+            { lat: 52.5239503, lng: 13.4101653 },
+            { lat: 52.5239289, lng: 13.4110343 },
+            { lat: 52.5238967, lng: 13.4117103 },
+            { lat: 52.5238752, lng: 13.4120321 },
+            { lat: 52.5236285, lng: 13.4126866 },
+            { lat: 52.5231242, lng: 13.4139311 },
+            { lat: 52.5227809, lng: 13.4146714 },
+            { lat: 52.5224799, lng: 13.4152412 }
+        ];
+
+        // Initialize a linestring and add all the points to it:
+        var linestring = new H.geo.LineString();
+        points.forEach(function (point) {
+            linestring.pushPoint(point);
+        });
+
+        // Initialize a polyline with the linestring:
+        var polyline = new H.map.Polyline(linestring, { style: { lineWidth: 10 } });
+
+        // Add the polyline to the map:
+        map.addObject(polyline);
+
+        // Get the bounding box of the rectanble
+        const polyilneBounds = polyline.getBoundingBox()
+
+        // // Zoom the map to fit the rectangle:
+        // map.getViewModel().setLookAtData({ bounds: polyilneBounds });
+
+
+        /* 
+            Improve the map view by adding some padding to the bounding box
+        */
+
+        // Compute the combined bounding box
+        const combinedBounds = circleBounds.mergeRect(rectBounds).mergeRect(polyilneBounds);
+
+        // Add some padding to the bounding box
+        function expandBoundingBox(bounds, paddingDegrees) {
+            return new H.geo.Rect(
+                bounds.getTop() + paddingDegrees,
+                bounds.getLeft() - paddingDegrees,
+                bounds.getBottom() - paddingDegrees,
+                bounds.getRight() + paddingDegrees
+            );
+        }
+
+        // Add padding (e.g., 0.01 degrees)
+        const paddedBounds = expandBoundingBox(combinedBounds, 0.002);
+
+        // Zoom to padded bounds
+        map.getViewModel().setLookAtData({ bounds: paddedBounds });
+
+        // // For adding some paddings, do NOT use this as it will cancel zoom in
+        // map.getViewPort().setPadding(50, 50, 50, 50);
+
+    </script>
+</body>
+
+</html>

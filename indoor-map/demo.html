@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-mapevents.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-ui.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.2/mapsjs-venues.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.2/mapsjs-ui.css" />
+    <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+    <script type="text/javascript" src="../../credentials.js"></script>
+</head>
+
+<body>
+    <div style="width: 100%; height: 700px" id="mapContainer"></div>
+    <script>
+        // Initiate and authenticate your connection to the HERE platform:
+        const platform = new H.service.Platform({
+            'apikey': window.apikey
+        });
+
+        // Obtain the default map types from the platform object:
+        const defaultLayers = platform.createDefaultLayers();
+
+        // Instantiate (and display) a map:
+        const map = new H.Map(
+            document.getElementById("mapContainer"),
+            defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: {
+                lat: 52.5,
+                lng: 13.4
+            }
+        });
+
+        // MapEvents enables the event system.
+        // The behavior variable implements default interactions for pan/zoom (also on mobile touch environments).
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+
+        // Enable dynamic resizing of the map, based on the current size of the enclosing container
+        window.addEventListener('resize', () => map.getViewPort().resize());
+
+        // Create the default UI:
+        const ui = H.ui.UI.createDefault(map, defaultLayers)
+
+        /**
+         * Example for Indoor Map for JSMapsApi.
+         */
+
+        // Replace with your HERE platform app api key
+        var yourApikey = "_s4JTAQlvgGjsWdmPI2vJaAjtXIaT-UXp4eGXl-h2u4";
+
+        // Replace with your indoor map platform collection hrn
+        var indoorMapHrn =
+            "hrn:here:data::org651595200:indoormap-ed6d5667-cfe0-4748-bbf5-88b00e7e3b21-collection";
+
+        // Replace with the venue id for your map. This example works for maps:
+        // 7348 - Zurich Airport
+        // 27158 - Tiefgarage Riem Arcaden APCOA Parking garage
+        // 22766 - Mall of Berlin
+        var venueId = "7348";
+
+        // Optionally, the value of the drawing id varies as per the venue being loaded. Replace with appropriate value.
+        var drawingId = "structure-7880";
+
+        // Set to false if base map is not needed to be displayed.
+        var showBaseMap = true;
+
+        // Value of Level index to set other than the default
+        var levelIndex = 1;
+
+        // Optional, list of label text preferences to override.
+        var labelTextPreferenceOverride = [
+            H.venues.Service.LABEL_TEXT_PREFERENCE_OVERRIDE.OCCUPANT_NAMES,
+            H.venues.Service.LABEL_TEXT_PREFERENCE_OVERRIDE.SPACE_NAME,
+        ];
+
+        /**
+         * Load and add indoor data on the map.
+         *
+         * @param  {H.Map} map A HERE Map instance
+         * @param  {H.service.Platform} platform A HERE Platform instance
+         */
+        // Indoor Maps provider interacts with a tile layer to visualize and control the Indoor Map
+        var venuesProvider = new H.venues.Provider();
+
+        // Get an instance of the Indoor Maps service using a valid apikey for Indoor Maps
+        var venuesService = platform.getVenuesService({ apikey: yourApikey, hrn: indoorMapHrn });
+
+        // Use venuesService.getMapInfoList to retrieve the list of Indoor maps from the given HRN
+        venuesService.getMapInfoList().then((mapInfoList) => {
+            mapInfoList.forEach((mapInfo) => {
+                console.log(
+                    "Indoor map id: " + mapInfo.mapId + ", map name: " + mapInfo.mapName
+                );
+            });
+        });
+
+        // Indoor Maps service provides a loadVenue method. Optionally, overriding the label preferences
+        venuesService
+            .loadVenue(venueId, { labelTextPreferenceOverride })
+            .then((venue) => {
+                // add Indoor Maps data to the Indoor Maps provider
+                venuesProvider.addVenue(venue);
+                venuesProvider.setActiveVenue(venue);
+
+                // create a tile layer for the Indoor Maps provider
+                var venueLayer = new H.map.layer.TileLayer(venuesProvider);
+                if (showBaseMap) {
+                    // Add venueLayer to the base layer
+                    map.addLayer(venueLayer);
+                } else {
+                    // If base map is not needed, set the venueLayer as base layer
+                    map.setBaseLayer(venueLayer);
+                }
+
+                // Set center of the map view to the center of the venue
+                map.setCenter(venue.getCenter());
+
+                // To automatically focus the map on the vanue
+                map.getViewModel().setLookAtData({ bounds: venue.getBoundingBox() });
+
+                // Optionally select a different active drawing.
+                if (venue.getDrawing(drawingId)) {
+                    venue.setActiveDrawing(drawingId);
+                }
+
+                // Optionally set a different active level
+                if (venue.getLevels().length >= levelIndex) {
+                    venue.setActiveLevelIndex(levelIndex);
+                }
+
+                // Create a level control
+                var levelControl = new H.venues.ui.LevelControl(venue);
+                ui.addControl("level-control", levelControl);
+
+                // Create a drawing control:
+                var drawingControl = new H.venues.ui.DrawingControl(venue);
+                ui.addControl("drawing-control", drawingControl);
+            });
+
+    </script>
+</body>
+
+</html>
