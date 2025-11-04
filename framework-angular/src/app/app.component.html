@@ -1,0 +1,12 @@
+<app-jsmap
+  [zoom]="zoom"
+  [lat]="lat"
+  [lng]="lng"
+  (notify)="handleMapChange($event)"
+></app-jsmap>
+<app-mapposition
+  [zoom]="zoom"
+  [lat]="lat"
+  [lng]="lng"
+  (notify)="handleInputChange($event)"
+></app-mapposition>

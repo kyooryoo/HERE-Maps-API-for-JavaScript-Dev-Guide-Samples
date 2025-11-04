@@ -1,0 +1,30 @@
+<div class="input-group">
+  <label for="zoom">Zoom:</label>
+  <input
+    id="zoom"
+    (change)="notify.emit($event)"
+    name="zoom"
+    type="number"
+    [value]="zoom"
+  />
+</div>
+<div class="input-group">
+  <label for="lat">Latitude:</label>
+  <input
+    id="lat"
+    (change)="notify.emit($event)"
+    name="lat"
+    type="number"
+    [value]="lat"
+  />
+</div>
+<div class="input-group">
+  <label for="lng">Longitude:</label>
+  <input
+    id="lng"
+    (change)="notify.emit($event)"
+    name="lng"
+    type="number"
+    [value]="lng"
+  />
+</div>

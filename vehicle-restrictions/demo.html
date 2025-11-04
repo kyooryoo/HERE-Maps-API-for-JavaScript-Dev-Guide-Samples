@@ -57,7 +57,7 @@
             if (event.target.getState() === H.map.render.Style.State.READY) {
                 style.removeEventListener('change', onChangeHandler); // Otherwise loops infinitely.
                 var enabledFeatures = style.getEnabledFeatures() || [];
-                enabledFeatures.push({ feature: 'vehicle restrictions', mode: 'active & inactive' });
+                enabledFeatures.push({ feature: 'vehicle restrictions', mode: 'active & inactive differentiated' });
             }
         }
         style.addEventListener('change', onChangeHandler)
@@ -223,12 +223,12 @@
         // map.getBaseLayer().getProvider().setVehicleSpecs(truckSpecs);
 
 
-        // Use Case - axleCount
-        // Center the map at a location with an axle count restriction
-        map.getViewModel().setLookAtData({
-            position: { lat: 45.46224, lng: -122.63013 },
-            zoom: 18
-        });
+        // // Use Case - axleCount
+        // // Center the map at a location with an axle count restriction
+        // map.getViewModel().setLookAtData({
+        //     position: { lat: 45.46224, lng: -122.63013 },
+        //     zoom: 18
+        // });
 
         // const truckSpecs = {
         //     vehicleType: H.service.omv.Provider.IVehicleSpecs.VehicleType.TRUCK,
@@ -236,6 +236,113 @@
         // };
 
         // map.getBaseLayer().getProvider().setVehicleSpecs(truckSpecs);
+
+        // // Some restrictions may show the weight limit for HGVs along with the number of axles in the vehicle
+        // map.getViewModel().setLookAtData({
+        //     position: { lat: 45.4628, lng: -122.6300 },
+        //     zoom: 21
+        // });
+
+        // const truckSpecs = {
+        //     vehicleType: H.service.omv.Provider.IVehicleSpecs.VehicleType.TRUCK,
+        //     grossWeightInKilograms: 22000,
+        //     axleCount: 3
+        // };
+
+        // map.getBaseLayer().getProvider().setVehicleSpecs(truckSpecs);
+
+
+        // // Use Case - weightPerAxleInKilograms
+        // // Center the map at a location with a per-axle weight restriction
+        // map.getViewModel().setLookAtData({
+        //     position: { lat: 64.0834, lng: -21.8334 },
+        //     zoom: 16
+        // });
+
+        // const truckSpecs = {
+        //     vehicleType: H.service.omv.Provider.IVehicleSpecs.VehicleType.TRUCK,
+        //     weightPerAxleInKilograms: 6000
+        // };
+
+        // map.getBaseLayer().getProvider().setVehicleSpecs(truckSpecs);
+
+
+        // // Use Case - weightPerAxleGroup
+        // // The restriction is shown if the group weight is greater than the restriction.
+        // // Center the map at a location with axle group restrictions
+        // map.getViewModel().setLookAtData({
+        //     position: { lat: -37.0440, lng: 148.8152 },
+        //     zoom: 18.9
+        // });
+
+        // const truckSpecs = {
+        //     vehicleType: H.service.omv.Provider.IVehicleSpecs.VehicleType.TRUCK,
+        //     weightPerAxleGroup: {
+        //         tripleAxleGroupInKilograms: 21000,
+        //     }
+        // };
+
+        // map.getBaseLayer().getProvider().setVehicleSpecs(truckSpecs);
+
+
+        // // Use Case - preferredTruckRouteTypes
+        // // https://www.here.com/docs/bundle/map-content-data-specification/page/topics_schema/transportpreferredroutecondition.preferredroutetype.html
+        
+        // // To visualize truck preferred roads, the additional "truck preferred roads" feature must be enabled. 
+        // const addTruckPreferredRoadsFeature = (event) => {
+        //     if (event.target.getState() === H.map.render.Style.State.READY) {
+        //         style.removeEventListener('change', onChangeHandler); // Otherwise loops infinitely.
+        //         var enabledFeatures = style.getEnabledFeatures() || [];
+        //         enabledFeatures.push({ feature: 'truck preferred roads', mode: 'all' });
+        //     }
+        // }
+        // style.addEventListener('change', addTruckPreferredRoadsFeature)
+
+        // // Center the map at a location with truck preferred roads
+        // map.getViewModel().setLookAtData({
+        //     position: { lat: 49.4944, lng: 8.5268 },
+        //     zoom: 13.42
+        // });
+
+        // const truckSpecs = {
+        //     vehicleType: H.service.omv.Provider.IVehicleSpecs.VehicleType.TRUCK,
+        //     preferredTruckRouteTypes: [16]
+        // };
+
+        // map.getBaseLayer().getProvider().setVehicleSpecs(truckSpecs)
+
+
+        // // Use Case - multiple attributes
+        // // Center the map at a location with multiple vehicle restrictions
+        // map.getViewModel().setLookAtData({
+        //     position: { lat: 59.3310, lng: 18.0191 },
+        //     zoom: 15.82
+        // });
+
+        // const truckSpecs = {
+        //     vehicleType: H.service.omv.Provider.IVehicleSpecs.VehicleType.TRUCK,
+        //     grossWeightInKilograms: 8000,
+        //     lengthInCentimeters: 600,
+        //     heightInCentimeters: 400
+        // };
+
+        // map.getBaseLayer().getProvider().setVehicleSpecs(truckSpecs)
+
+
+        // // Use Case - hide or fade the inactive restrictions
+        // // Change the "vehicle restrictions" mode to "active only" - hide inactive
+        // // Change the "vehicle restrictions" mode to "active & inactive differentiated" - fade inactive
+        // // Center the map in London
+        // map.getViewModel().setLookAtData({
+        //     zoom: 13,
+        //     position: { lat: 51.5, lng: 0 }
+        // });
+
+        // // Set the time to August 13, 2025 at 10:00 AM in London
+        // map.getBaseLayer().getProvider().setTimeRestriction("2025-08-13T10:00");
+        // // Alternatively, a range can be specified
+        // // map.getBaseLayer().getProvider().setTimeRestriction(["2025-08-13T10:00", "2025-08-13T12:00"]);
+
 
     </script>
 </body>
